@@ -696,6 +696,7 @@
 
 }
 
+//date转时间戳
 - (NSString *)dateConversionTimeStamp:(NSDate *)date
 {
     NSString *timeSp = [NSString stringWithFormat:@"%ld", (long)[date timeIntervalSince1970]*1000];
