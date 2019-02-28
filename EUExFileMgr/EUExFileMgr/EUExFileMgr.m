@@ -664,6 +664,9 @@
     if (![mgr fileExistsAtPath:path isDirectory:&isDir] || !isDir) {
         return result;
     }
+    
+    
+    
     result = [NSMutableArray array];
     [[mgr contentsOfDirectoryAtPath:path error:nil] enumerateObjectsUsingBlock:^(NSString * _Nonnull fileName, NSUInteger idx, BOOL * _Nonnull stop) {
         NSMutableDictionary *info = [NSMutableDictionary dictionary];
@@ -674,10 +677,29 @@
         [mgr fileExistsAtPath:filePath isDirectory:&isDir];
         NSNumber *fileType = isDir ? @1 : @0;
         [info setValue:fileType forKey:@"fileType"];
+        
+        //查看IOS沙盒中文件的 修改日期，创建日期
+        NSDictionary *fileAttributes = [mgr attributesOfItemAtPath:path error:nil];
+        //修改日期
+        NSDate *fileModDate = [fileAttributes objectForKey:NSFileModificationDate];
+        NSString *fileModDateStr = [self dateConversionTimeStamp:fileModDate];
+        //创建日期
+        NSDate *fileCreateDate = [fileAttributes objectForKey:NSFileCreationDate];
+        NSString *fileCreateDateStr = [self dateConversionTimeStamp:fileCreateDate];
+        
+        [info setValue:fileModDateStr forKey:@"fileModTimestamp"];
+        [info setValue:fileCreateDateStr forKey:@"fileCreateTimestamp"];
+       
         [result addObject:info];
     }];
     return  result;
 
+}
+
+- (NSString *)dateConversionTimeStamp:(NSDate *)date
+{
+    NSString *timeSp = [NSString stringWithFormat:@"%ld", (long)[date timeIntervalSince1970]*1000];
+    return timeSp;
 }
 
 /**
