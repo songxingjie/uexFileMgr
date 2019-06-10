@@ -626,6 +626,8 @@
         dateStr = [dateFormatter stringFromDate:creationDate];
     }
     
+    NSLog(@"creationDate ========= %@",creationDate);
+    
     [self.webViewEngine callbackWithFunctionKeyPath:@"uexFileMgr.cbGetFileCreateTime" arguments:ACArgsPack(@(inOpid.integerValue),@0,dateStr)];
     return dateStr;
 }
@@ -664,9 +666,7 @@
     if (![mgr fileExistsAtPath:path isDirectory:&isDir] || !isDir) {
         return result;
     }
-    
-    
-    
+   
     result = [NSMutableArray array];
     [[mgr contentsOfDirectoryAtPath:path error:nil] enumerateObjectsUsingBlock:^(NSString * _Nonnull fileName, NSUInteger idx, BOOL * _Nonnull stop) {
         NSMutableDictionary *info = [NSMutableDictionary dictionary];
@@ -677,29 +677,66 @@
         [mgr fileExistsAtPath:filePath isDirectory:&isDir];
         NSNumber *fileType = isDir ? @1 : @0;
         [info setValue:fileType forKey:@"fileType"];
+      
         
         //查看IOS沙盒中文件的 修改日期，创建日期
         NSDictionary *fileAttributes = [mgr attributesOfItemAtPath:path error:nil];
         //修改日期
         NSDate *fileModDate = [fileAttributes objectForKey:NSFileModificationDate];
-        NSString *fileModDateStr = [self dateConversionTimeStamp:fileModDate];
+        NSDate *nowfileModDate = [self getNowDateFromatAnDate:fileModDate];
+        NSLog(@"修改时间======== %@",nowfileModDate);
+        NSString *fileModDateStr = [self dateConversionTimeStamp:nowfileModDate];
+        
+        
         //创建日期
         NSDate *fileCreateDate = [fileAttributes objectForKey:NSFileCreationDate];
-        NSString *fileCreateDateStr = [self dateConversionTimeStamp:fileCreateDate];
+        NSDate *nowfileCreateDate = [self getNowDateFromatAnDate:fileCreateDate];
+        NSString *fileCreateDateStr = [self dateConversionTimeStamp:nowfileCreateDate];
         
-        [info setValue:fileModDateStr forKey:@"fileModTimestamp"];
+        [info setValue:fileModDateStr  forKey:@"fileModTimestamp"];
         [info setValue:fileCreateDateStr forKey:@"fileCreateTimestamp"];
-       
+        
+    
         [result addObject:info];
+        
+        
+       // NSLog(@"fileName ===== %@   文件创建时间:%@   文件创建时间转换后 ======= %@    文件路径:%@",fileName,fileCreateDate,fileCreateDateStr,filePath);
+        NSLog(@"fileName ===== %@  修改时间: %@    修改时间转换 ========== %@  文件路径:%@", fileName,fileModDate,fileModDateStr,filePath);
+        
+        //NSLog(@"result === %@",result);
     }];
     return  result;
+}
 
+- (NSDate *)getNowDateFromatAnDate:(NSDate *)anyDate {
+
+    //设置源日期时区
+    NSTimeZone* sourceTimeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];//或GMT
+    
+    //设置转换后的目标日期时区
+    NSTimeZone* destinationTimeZone = [NSTimeZone localTimeZone];
+    
+    //得到源日期与世界标准时间的偏移量
+    NSInteger sourceGMTOffset = [sourceTimeZone secondsFromGMTForDate:anyDate];
+    
+    //目标日期与本地时区的偏移量
+    NSInteger destinationGMTOffset = [destinationTimeZone secondsFromGMTForDate:anyDate];
+    
+    //得到时间偏移量的差值
+    NSTimeInterval interval = destinationGMTOffset - sourceGMTOffset;
+    
+    //转为现在时间
+    NSDate* destinationDateNow = [[NSDate alloc] initWithTimeInterval:interval sinceDate:anyDate];
+    
+   // NSLog(@"现在的修改时间：%@",destinationDateNow);
+    
+    return destinationDateNow;
 }
 
 //date转时间戳
 - (NSString *)dateConversionTimeStamp:(NSDate *)date
 {
-    NSString *timeSp = [NSString stringWithFormat:@"%ld", (long)[date timeIntervalSince1970]*1000];
+    NSString *timeSp = [NSString stringWithFormat:@"%ld", (long)[date timeIntervalSinceNow]*1000];
     return timeSp;
 }
 
@@ -979,9 +1016,6 @@
     [self.fobjDict setValue:file forKey:opid];
     return opid;
 }
-
-
-
 
 
 //获取哈希值
